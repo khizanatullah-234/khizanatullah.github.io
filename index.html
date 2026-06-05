@@ -1,0 +1,40 @@
+function doPost(e) {
+  try {
+    // Menerima data JSON transaksi dari GitHub Front-End
+    var dataTransaksi = JSON.parse(e.postData.contents);
+    
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetMaster = ss.getSheetByName("Penjualan_Master");
+    var sheetDetail = ss.getSheetByName("Penjualan_Detail");
+    
+    // 1. Simpan ke Penjualan_Master (Ringkasan)
+    sheetMaster.appendRow([
+      dataTransaksi.id_transaksi,
+      dataTransaksi.waktu,
+      dataTransaksi.total_bayar,
+      dataTransaksi.jenis_pembayaran // "Tunai" atau "Kredit"
+    ]);
+    
+    // 2. Simpan ke Penjualan_Detail (Looping isi keranjang belanja)
+    var keranjang = dataTransaksi.keranjang; // Berupa Array
+    for (var i = 0; i < keranjang.length; i++) {
+      sheetDetail.appendRow([
+        dataTransaksi.id_transaksi,
+        keranjang[i].nama_barang,
+        keranjang[i].harga_jual,
+        keranjang[i].quantity,
+        keranjang[i].satuan,
+        keranjang[i].subtotal
+      ]);
+      
+      // (Opsional) Di sini Anda juga bisa menambahkan fungsi potong stok otomatis di sheet Produk
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({status: "Sukses", message: "Transaksi berhasil dicatat"}))
+                         .setMimeType(ContentService.MimeType.JSON);
+                         
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({status: "Gagal", error: error.toString()}))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+}
